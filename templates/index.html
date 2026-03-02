@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Photo Compressor</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Photo Compressor</h1>
+        <p class="sub">Сжатие с минимальной потерей качества · WebP/JPEG · Авто-подбор · ZIP</p>
+      </div>
+      <div class="pill">Local · Flask</div>
+    </header>
+
+    <section class="card">
+      <div class="controls">
+        <div class="control">
+          <label>Формат</label>
+          <select id="format">
+            <option value="webp">WebP (рекоменд.)</option>
+            <option value="jpeg">JPEG</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label class="row">
+            <span>Авто-подбор лучшего качества</span>
+            <input id="auto" type="checkbox" checked />
+          </label>
+          <div class="hint">Авто подбирает качество под целевой размер</div>
+        </div>
+
+        <div class="control">
+          <label>Качество <span class="mono" id="qLabel">85</span></label>
+          <input id="quality" type="range" min="40" max="95" value="85" />
+          <div class="hint">Используется, если авто выключено</div>
+        </div>
+
+        <div class="control">
+          <label>Целевой размер (в авто-режиме): <span class="mono" id="tLabel">40%</span></label>
+          <input id="target" type="range" min="10" max="95" value="40" />
+          <div class="hint">Напр. 40% = стремимся к ~40% от исходного размера</div>
+        </div>
+
+        <div class="control">
+          <label>Мин. качество в авто: <span class="mono" id="minQLabel">60</span></label>
+          <input id="minQuality" type="range" min="30" max="90" value="60" />
+          <div class="hint">Ниже — авто не опускается</div>
+        </div>
+
+        <div class="control">
+          <label>Ограничение размера (длинная сторона)</label>
+          <select id="maxDim">
+            <option value="0">Не уменьшать</option>
+            <option value="3000">3000 px</option>
+            <option value="2500" selected>2500 px (часто оптимально)</option>
+            <option value="2000">2000 px</option>
+            <option value="1600">1600 px</option>
+          </select>
+          <div class="hint">Уменьшение огромных фото сильно экономит размер</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card drop">
+      <div id="dropzone" class="dropzone">
+        <input id="fileInput" type="file" accept="image/*" multiple hidden />
+        <div class="dz-inner">
+          <div class="icon">⬇</div>
+          <div class="dz-title">Перетащи фотографии сюда</div>
+          <div class="dz-sub">или</div>
+          <button id="pickBtn" class="btn">Выбрать файлы</button>
+          <div class="dz-note">Можно выбрать все или часть · JPG/PNG/WebP/TIFF/BMP</div>
+        </div>
+      </div>
+
+      <div class="files">
+        <div class="files-head">
+          <div class="files-title">Файлы</div>
+          <div class="files-actions">
+            <button id="clearBtn" class="btn btn-ghost">Очистить</button>
+            <button id="compressBtn" class="btn btn-primary" disabled>Сжать</button>
+          </div>
+        </div>
+
+        <div id="fileList" class="fileList empty">
+          <div class="emptyState">Пока нет выбранных файлов</div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+    </section>
+
+    <section id="resultsCard" class="card hidden">
+      <div class="results-head">
+        <div>
+          <div class="results-title">Результат</div>
+          <div class="results-sub" id="totals"></div>
+        </div>
+        <div class="results-actions">
+          <a id="zipLink" class="btn btn-primary" href="#" target="_blank">Скачать ZIP</a>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table class="table" id="resultsTable">
+          <thead>
+            <tr>
+              <th>Файл</th>
+              <th>ДО</th>
+              <th>ПОСЛЕ</th>
+              <th>Экономия</th>
+              <th>Q</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="muted">Подсказка: WebP почти всегда дает меньше размер при хорошем качестве.</div>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

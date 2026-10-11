@@ -1,7 +1,11 @@
 import os
 import re
+import socket
+import sys
+import threading
 import uuid
 import shutil
+import webbrowser
 from io import BytesIO
 from dataclasses import dataclass
 from typing import Optional
@@ -10,10 +14,21 @@ from flask import Flask, render_template, request, jsonify, send_file, abort
 from PIL import Image
 
 
-app = Flask(__name__)
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-JOBS_DIR = os.path.join(BASE_DIR, "jobs")
+BUNDLE_DIR = getattr(sys, "_MEIPASS", BASE_DIR)
+
+if getattr(sys, "frozen", False):
+    DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA", BASE_DIR), "PhotoCompressor")
+else:
+    DATA_DIR = BASE_DIR
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BUNDLE_DIR, "templates"),
+    static_folder=os.path.join(BUNDLE_DIR, "static"),
+)
+
+JOBS_DIR = os.path.join(DATA_DIR, "jobs")
 os.makedirs(JOBS_DIR, exist_ok=True)
 
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
@@ -341,5 +356,13 @@ def download_file(job_id: str, filename: str):
 
 
 if __name__ == "__main__":
-    # Для “нормального” запуска: debug=False
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    if getattr(sys, "frozen", False):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        if os.environ.get("PHOTO_COMPRESS_NO_BROWSER") != "1":
+            threading.Timer(0.8, webbrowser.open, args=(f"http://127.0.0.1:{port}",)).start()
+    else:
+        port = 5000
+
+    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)

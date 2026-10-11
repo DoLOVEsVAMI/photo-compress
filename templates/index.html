@@ -2,134 +2,149 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Photo Compressor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Сжать фото</title>
+  <script>
+    (() => {
+      const saved = localStorage.getItem("photo-compressor-theme");
+      const theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-  <div class="bg-glow"></div>
-
-  <main class="wrap">
-    <header class="top">
-      <div>
-        <h1>Photo Compressor</h1>
-        <p class="sub">Сжатие с минимальной потерей качества · WebP/JPEG · Авто-подбор · ZIP</p>
-      </div>
-      <div class="pill">Local · Flask</div>
+  <main class="shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Сжать фото — главная">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 3.75h10A3.25 3.25 0 0 1 20.25 7v10A3.25 3.25 0 0 1 17 20.25H7A3.25 3.25 0 0 1 3.75 17V7A3.25 3.25 0 0 1 7 3.75Z"/><path d="m7.5 15 2.6-2.6a1 1 0 0 1 1.4 0l1.35 1.35 1.65-1.65a1 1 0 0 1 1.4 0L18 14.2"/><circle cx="9" cy="8.75" r="1.25"/></svg>
+        </span>
+        <span>Сжать фото</span>
+      </a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить тёмную тему" aria-pressed="false">
+        <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.25A8.5 8.5 0 0 1 8.75 4 8.5 8.5 0 1 0 20 15.25Z"/></svg>
+      </button>
     </header>
 
-    <section class="card">
-      <div class="controls">
-        <div class="control">
-          <label>Формат</label>
-          <select id="format">
-            <option value="webp">WebP (рекоменд.)</option>
-            <option value="jpeg">JPEG</option>
-          </select>
-        </div>
-
-        <div class="control">
-          <label class="row">
-            <span>Авто-подбор лучшего качества</span>
-            <input id="auto" type="checkbox" checked />
-          </label>
-          <div class="hint">Авто подбирает качество под целевой размер</div>
-        </div>
-
-        <div class="control">
-          <label>Качество <span class="mono" id="qLabel">85</span></label>
-          <input id="quality" type="range" min="40" max="95" value="85" />
-          <div class="hint">Используется, если авто выключено</div>
-        </div>
-
-        <div class="control">
-          <label>Целевой размер (в авто-режиме): <span class="mono" id="tLabel">40%</span></label>
-          <input id="target" type="range" min="10" max="95" value="40" />
-          <div class="hint">Напр. 40% = стремимся к ~40% от исходного размера</div>
-        </div>
-
-        <div class="control">
-          <label>Мин. качество в авто: <span class="mono" id="minQLabel">60</span></label>
-          <input id="minQuality" type="range" min="30" max="90" value="60" />
-          <div class="hint">Ниже — авто не опускается</div>
-        </div>
-
-        <div class="control">
-          <label>Ограничение размера (длинная сторона)</label>
-          <select id="maxDim">
-            <option value="0">Не уменьшать</option>
-            <option value="3000">3000 px</option>
-            <option value="2500" selected>2500 px (часто оптимально)</option>
-            <option value="2000">2000 px</option>
-            <option value="1600">1600 px</option>
-          </select>
-          <div class="hint">Уменьшение огромных фото сильно экономит размер</div>
-        </div>
-      </div>
+    <section class="intro">
+      <p class="eyebrow">Быстро и локально</p>
+      <h1>Фото весят меньше. Выглядят так же.</h1>
+      <p>Добавьте изображения, выберите настройки и скачайте готовые файлы.</p>
     </section>
 
-    <section class="card drop">
-      <div id="dropzone" class="dropzone">
-        <input id="fileInput" type="file" accept="image/*" multiple hidden />
-        <div class="dz-inner">
-          <div class="icon">⬇</div>
-          <div class="dz-title">Перетащи фотографии сюда</div>
-          <div class="dz-sub">или</div>
-          <button id="pickBtn" class="btn">Выбрать файлы</button>
-          <div class="dz-note">Можно выбрать все или часть · JPG/PNG/WebP/TIFF/BMP</div>
+    <section class="workspace" aria-label="Сжатие фотографий">
+      <div class="upload-panel">
+        <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Добавить изображения">
+          <input id="fileInput" type="file" accept="image/*" multiple hidden />
+          <div class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 14v3a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-3"/></svg>
+          </div>
+          <h2>Перетащите фото сюда</h2>
+          <p>JPG, PNG, WebP, TIFF или BMP</p>
+          <button id="pickBtn" class="button button-primary" type="button">Выбрать фото</button>
+        </div>
+
+        <div class="queue">
+          <div class="section-heading">
+            <div>
+              <h2>Файлы <span class="count" id="fileCount">0</span></h2>
+              <p id="fileSummary">Добавленные фото появятся здесь</p>
+            </div>
+            <button id="clearBtn" class="text-button" type="button" disabled>Очистить</button>
+          </div>
+          <div id="fileList" class="file-list empty"></div>
+          <div id="status" class="status" role="status" aria-live="polite"></div>
         </div>
       </div>
 
-      <div class="files">
-        <div class="files-head">
-          <div class="files-title">Файлы</div>
-          <div class="files-actions">
-            <button id="clearBtn" class="btn btn-ghost">Очистить</button>
-            <button id="compressBtn" class="btn btn-primary" disabled>Сжать</button>
+      <aside class="settings-panel">
+        <div class="section-heading settings-heading">
+          <div><h2>Настройки</h2><p>Оптимальный режим уже выбран</p></div>
+        </div>
+
+        <div class="field">
+          <label for="format">Формат</label>
+          <div class="select-wrap">
+            <select id="format">
+              <option value="webp">WebP — меньше размер</option>
+              <option value="jpeg">JPEG — совместимость</option>
+            </select>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
           </div>
         </div>
 
-        <div id="fileList" class="fileList empty">
-          <div class="emptyState">Пока нет выбранных файлов</div>
+        <label class="switch-row" for="auto">
+          <span><strong>Автонастройка</strong><small>Подберём качество под размер</small></span>
+          <span class="switch">
+            <input id="auto" type="checkbox" checked />
+            <span class="switch-track" aria-hidden="true"></span>
+          </span>
+        </label>
+
+        <div class="mode-fields" id="autoFields">
+          <div class="field range-field">
+            <div class="field-label"><label for="target">Размер файла</label><output id="tLabel" for="target">40%</output></div>
+            <input id="target" type="range" min="10" max="95" value="40" />
+          </div>
+          <div class="field range-field">
+            <div class="field-label"><label for="minQuality">Не ниже качества</label><output id="minQLabel" for="minQuality">60</output></div>
+            <input id="minQuality" type="range" min="30" max="90" value="60" />
+          </div>
         </div>
 
-        <div id="status" class="status"></div>
-      </div>
+        <div class="mode-fields hidden" id="manualFields">
+          <div class="field range-field">
+            <div class="field-label"><label for="quality">Качество</label><output id="qLabel" for="quality">85</output></div>
+            <input id="quality" type="range" min="40" max="95" value="85" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="maxDim">Длинная сторона</label>
+          <div class="select-wrap">
+            <select id="maxDim">
+              <option value="0">Без ограничения</option>
+              <option value="3000">До 3000 px</option>
+              <option value="2500" selected>До 2500 px</option>
+              <option value="2000">До 2000 px</option>
+              <option value="1600">До 1600 px</option>
+            </select>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+          </div>
+        </div>
+
+        <button id="compressBtn" class="button button-primary compress-button" type="button" disabled>
+          <span>Сжать фото</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
+        </button>
+        <p class="privacy-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z"/></svg>
+          Обработка на вашем компьютере
+        </p>
+      </aside>
     </section>
 
-    <section id="resultsCard" class="card hidden">
-      <div class="results-head">
-        <div>
-          <div class="results-title">Результат</div>
-          <div class="results-sub" id="totals"></div>
-        </div>
-        <div class="results-actions">
-          <a id="zipLink" class="btn btn-primary" href="#" target="_blank">Скачать ZIP</a>
-        </div>
+    <section id="resultsCard" class="results-panel hidden">
+      <div class="results-heading">
+        <div><p class="eyebrow">Готово</p><h2>Результат</h2><p id="totals"></p></div>
+        <a id="zipLink" class="button button-primary" href="#" target="_blank" rel="noopener">
+          Скачать всё
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>
+        </a>
       </div>
-
-      <div class="tableWrap">
-        <table class="table" id="resultsTable">
-          <thead>
-            <tr>
-              <th>Файл</th>
-              <th>ДО</th>
-              <th>ПОСЛЕ</th>
-              <th>Экономия</th>
-              <th>Q</th>
-              <th></th>
-            </tr>
-          </thead>
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead><tr><th>Файл</th><th>Было</th><th>Стало</th><th>Экономия</th><th>Качество</th><th></th></tr></thead>
           <tbody id="resultsBody"></tbody>
         </table>
       </div>
     </section>
 
-    <footer class="foot">
-      <div class="muted">Подсказка: WebP почти всегда дает меньше размер при хорошем качестве.</div>
-    </footer>
+    <footer>Сделано для быстрой обработки фотографий</footer>
   </main>
-
   <script src="/static/app.js"></script>
 </body>
 </html>

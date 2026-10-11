@@ -1,11 +1,12 @@
 import os
+import re
 import uuid
 import shutil
 from io import BytesIO
 from dataclasses import dataclass
+from typing import Optional
 
 from flask import Flask, render_template, request, jsonify, send_file, abort
-from werkzeug.utils import secure_filename
 from PIL import Image
 
 
@@ -32,6 +33,19 @@ def human_size(num_bytes: int) -> str:
 def allowed_filename(filename: str) -> bool:
     _, ext = os.path.splitext(filename.lower())
     return ext in ALLOWED_EXT
+
+
+def safe_image_filename(filename: str, fallback: str) -> Optional[str]:
+    """Keep Unicode names, but remove path and Windows-invalid characters."""
+    original = os.path.basename((filename or "").replace("\\", "/"))
+    stem, ext = os.path.splitext(original)
+    ext = ext.lower()
+    if ext not in ALLOWED_EXT:
+        return None
+
+    stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", stem).strip(" .")
+    stem = stem[:120] or fallback
+    return f"{stem}{ext}"
 
 
 def flatten_alpha_to_white(img: Image.Image) -> Image.Image:
@@ -190,13 +204,25 @@ def api_compress():
     total_before = 0
     total_after = 0
 
-    for f in files:
+    used_filenames = set()
+
+    for file_index, f in enumerate(files, start=1):
         if not f or not f.filename:
             continue
 
-        filename = secure_filename(f.filename)
-        if not filename or not allowed_filename(filename):
+        original_name = os.path.basename(f.filename.replace("\\", "/"))
+        filename = safe_image_filename(f.filename, f"image_{file_index}")
+        if not filename:
             continue
+
+        stem, ext = os.path.splitext(filename)
+        candidate = filename
+        duplicate_index = 2
+        while candidate.casefold() in used_filenames:
+            candidate = f"{stem}_{duplicate_index}{ext}"
+            duplicate_index += 1
+        filename = candidate
+        used_filenames.add(filename.casefold())
 
         in_path = os.path.join(in_dir, filename)
         f.save(in_path)
@@ -236,7 +262,7 @@ def api_compress():
 
         except Exception as e:
             results.append({
-                "name": filename,
+                "name": original_name,
                 "ok": False,
                 "error": str(e),
             })
@@ -246,7 +272,7 @@ def api_compress():
         total_after += after_bytes
 
         results.append({
-            "name": filename,
+            "name": original_name,
             "ok": True,
             "before_bytes": before_bytes,
             "after_bytes": after_bytes,
